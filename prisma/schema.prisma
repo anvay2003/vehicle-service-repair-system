@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  STAFF
+  TECHNICIAN
+  ADMIN
+}
+
+enum RequestStatus {
+  REQUESTED
+  CHECKED_IN
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  CHECKED_IN
+  DIAGNOSIS
+  AWAITING_APPROVAL
+  APPROVED
+  IN_REPAIR
+  COMPLETED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+
+  vehicles        Vehicle[]
+  serviceRequests ServiceRequest[]
+  assignedOrders  WorkOrder[]      @relation("TechnicianOrders")
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  make      String
+  model     String
+  year      Int
+  vin       String   @unique
+  mileage   Int
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+
+  serviceRequests ServiceRequest[]
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+  description String
+  status      RequestStatus @default(REQUESTED)
+  vehicleId   String
+  vehicle     Vehicle       @relation(fields: [vehicleId], references: [id])
+  customerId  String
+  customer    User          @relation(fields: [customerId], references: [id])
+  createdAt   DateTime      @default(now())
+
+  workOrder WorkOrder?
+}
+
+model WorkOrder {
+  id               String          @id @default(cuid())
+  status           WorkOrderStatus @default(CHECKED_IN)
+  serviceRequestId String          @unique
+  serviceRequest   ServiceRequest  @relation(fields: [serviceRequestId], references: [id])
+  technicianId     String?
+  technician       User?           @relation("TechnicianOrders", fields: [technicianId], references: [id])
+  diagnosis        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
