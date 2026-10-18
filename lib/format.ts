@@ -1,0 +1,1 @@
+export const pretty = (s: string) => s.replaceAll("_", " ");
