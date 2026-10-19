@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guard";
+import type { Prisma } from "@prisma/client";
 
 const schema = z.object({
   vehicleId: z.string().min(1),
@@ -38,12 +39,11 @@ export async function GET(req: Request) {
   if (error) return error;
 
   const status = new URL(req.url).searchParams.get("status");
-  const where = {
-    ...(session.user.role === "CUSTOMER" ? { customerId: session.user.id } : {}),
-    ...(status === "REQUESTED" || status === "CHECKED_IN" || status === "CANCELLED"
-      ? { status }
-      : {}),
-  };
+    const where: Prisma.ServiceRequestWhereInput = {};
+  if (session.user.role === "CUSTOMER") where.customerId = session.user.id;
+  if (status === "REQUESTED" || status === "CHECKED_IN" || status === "CANCELLED") {
+    where.status = status;
+  }
   const requests = await prisma.serviceRequest.findMany({
     where,
     include: { vehicle: true, customer: { select: { name: true, email: true } }, workOrder: true },
