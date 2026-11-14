@@ -19,6 +19,7 @@ export async function GET() {
     include: {
       serviceRequest: { include: { vehicle: true } },
       technician: { select: { id: true, name: true } },
+      estimate: { include: { items: true } },
     },
     orderBy: { updatedAt: "desc" },
   });

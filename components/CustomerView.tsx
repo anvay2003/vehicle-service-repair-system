@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { pretty } from "@/lib/format";
+import EstimateReview from "./EstimateReview";
 
 type Vehicle = { id: string; make: string; model: string; year: number; vin: string; mileage: number };
 type Req = { id: string; description: string; status: string; vehicle: Vehicle };
@@ -11,6 +12,7 @@ type Order = {
   diagnosis: string | null;
   technician: { name: string } | null;
   serviceRequest: { description: string; vehicle: Vehicle };
+  estimate: { items: { id: string; description: string; amountCents: number }[] } | null;
 };
 
 const input = "w-full rounded border p-2";
@@ -127,7 +129,7 @@ export default function CustomerView() {
         </ul>
       </section>
 
-      <section className="space-y-3">
+            <section className="space-y-3">
         <h2 className="text-xl font-semibold">Repair progress</h2>
         {orders.length === 0 && <p className="text-sm text-gray-500">No work orders yet.</p>}
         <ul className="space-y-2">
@@ -137,6 +139,16 @@ export default function CustomerView() {
               <span className="ml-2 rounded bg-green-100 px-2 py-0.5">{pretty(o.status)}</span>
               <div>Technician: {o.technician?.name ?? "Not assigned yet"}</div>
               {o.diagnosis && <div>Diagnosis: {o.diagnosis}</div>}
+              {o.status === "AWAITING_APPROVAL" && o.estimate && (
+                <EstimateReview
+                  orderId={o.id}
+                  items={o.estimate.items}
+                  onDone={(m) => {
+                    setMsg(m);
+                    load();
+                  }}
+                />
+              )}
             </li>
           ))}
         </ul>

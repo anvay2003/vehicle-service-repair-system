@@ -1,35 +1,43 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { pretty } from "@/lib/format";
+import { money, pretty } from "@/lib/format";
+import EstimateForm from "./EstimateForm";
 
 type Order = {
   id: string;
   status: string;
   diagnosis: string | null;
   serviceRequest: { description: string; vehicle: { make: string; model: string; year: number } };
+  estimate: { status: string; items: { id: string; description: string; amountCents: number }[] } | null;
 };
 
-// Mirrors lib/workflow.ts TECH_TRANSITIONS
+// Mirrors lib/workflow.ts TECH_TRANSITIONS (DIAGNOSIS -> AWAITING_APPROVAL is via the estimate form)
 const NEXT: Record<string, string | undefined> = {
   CHECKED_IN: "DIAGNOSIS",
-  DIAGNOSIS: "AWAITING_APPROVAL",
   APPROVED: "IN_REPAIR",
   IN_REPAIR: "COMPLETED",
 };
 
+const WAITING: Record<string, string> = {
+  AWAITING_APPROVAL: "Waiting for the customer to approve the estimate.",
+  REJECTED: "The customer rejected the estimate. This work order is closed.",
+  COMPLETED: "Repair completed.",
+};
+
 function OrderCard({ order, onChanged }: { order: Order; onChanged: (m: string) => void }) {
-  const [diagnosis, setDiagnosis] = useState(order.diagnosis ?? "");
   const next = NEXT[order.status];
 
   async function advance() {
     if (!next) return;
     const res = await api<{ error?: string }>(`/api/work-orders/${order.id}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status: next, ...(diagnosis ? { diagnosis } : {}) }),
+      body: JSON.stringify({ status: next }),
     });
     onChanged(res.ok ? `Status updated to ${pretty(next)}` : res.data?.error ?? "Update failed");
   }
+
+  const total = order.estimate?.items.reduce((s, i) => s + i.amountCents, 0);
 
   return (
     <li className="space-y-2 rounded border p-3 text-sm">
@@ -39,20 +47,19 @@ function OrderCard({ order, onChanged }: { order: Order; onChanged: (m: string) 
         <div className="text-gray-600">{order.serviceRequest.description}</div>
       </div>
       {order.status === "DIAGNOSIS" && (
-        <textarea
-          className="w-full rounded border p-2"
-          placeholder="Diagnosis and repair notes"
-          value={diagnosis}
-          onChange={(e) => setDiagnosis(e.target.value)}
-        />
+        <EstimateForm orderId={order.id} initialDiagnosis={order.diagnosis ?? ""} onDone={onChanged} />
       )}
       {order.status !== "DIAGNOSIS" && order.diagnosis && <div>Diagnosis: {order.diagnosis}</div>}
-      {next ? (
+      {order.estimate && total !== undefined && (
+        <div>Estimate: {money(total)} ({pretty(order.estimate.status)})</div>
+      )}
+      {next && (
         <button onClick={advance} className="rounded bg-black px-3 py-1 text-white">
           Move to {pretty(next)}
         </button>
-      ) : (
-        <p className="text-gray-500">Waiting on customer or no further action.</p>
+      )}
+      {!next && order.status !== "DIAGNOSIS" && (
+        <p className="text-gray-500">{WAITING[order.status] ?? "No further action."}</p>
       )}
     </li>
   );

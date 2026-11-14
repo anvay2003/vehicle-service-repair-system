@@ -1,10 +1,10 @@
 import type { WorkOrderStatus } from "@prisma/client";
 
-// Allowed transitions a technician may perform.
-// AWAITING_APPROVAL -> APPROVED/REJECTED is the customer's action (US-06, Sprint 2).
+// Technician transitions. DIAGNOSIS -> AWAITING_APPROVAL happens only by submitting an
+// estimate (POST /api/work-orders/[id]/estimate). AWAITING_APPROVAL -> APPROVED/REJECTED
+// is the customer's decision (US-06).
 export const TECH_TRANSITIONS: Partial<Record<WorkOrderStatus, WorkOrderStatus[]>> = {
   CHECKED_IN: ["DIAGNOSIS"],
-  DIAGNOSIS: ["AWAITING_APPROVAL"],
   APPROVED: ["IN_REPAIR"],
   IN_REPAIR: ["COMPLETED"],
 };
