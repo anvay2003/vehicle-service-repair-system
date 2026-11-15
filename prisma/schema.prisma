@@ -41,6 +41,9 @@ model User {
   vehicles        Vehicle[]
   serviceRequests ServiceRequest[]
   assignedOrders  WorkOrder[]      @relation("TechnicianOrders")
+  avatarUrl       String?
+  reviewsWritten  Review[] @relation("CustomerReviews")
+  reviewsReceived Review[] @relation("TechnicianReviews")
 }
 
 model Vehicle {
@@ -81,6 +84,7 @@ model WorkOrder {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   estimate         Estimate?
+  review           Review?
 }
 
 enum EstimateStatus {
@@ -105,4 +109,17 @@ model EstimateItem {
   estimate    Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
   description String
   amountCents Int
+}
+
+model Review {
+  id           String    @id @default(cuid())
+  workOrderId  String    @unique
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id])
+  customerId   String
+  customer     User      @relation("CustomerReviews", fields: [customerId], references: [id])
+  technicianId String
+  technician   User      @relation("TechnicianReviews", fields: [technicianId], references: [id])
+  rating       Int
+  comment      String?
+  createdAt    DateTime  @default(now())
 }

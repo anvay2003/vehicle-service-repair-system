@@ -1,6 +1,8 @@
 "use client";
+import { useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
+import { Button } from "./ui";
 
 type Item = { id: string; description: string; amountCents: number };
 
@@ -13,13 +15,17 @@ export default function EstimateReview({
   items: Item[];
   onDone: (msg: string) => void;
 }) {
+  const [busy, setBusy] = useState(false);
   const total = items.reduce((s, i) => s + i.amountCents, 0);
 
   async function decide(decision: "APPROVE" | "REJECT") {
+    if (decision === "REJECT" && !window.confirm("Rejecting closes this work order. Continue?")) return;
+    setBusy(true);
     const res = await api<{ error?: string }>(`/api/work-orders/${orderId}/estimate/decision`, {
       method: "POST",
       body: JSON.stringify({ decision }),
     });
+    setBusy(false);
     onDone(
       res.ok
         ? decision === "APPROVE" ? "Estimate approved" : "Estimate rejected"
@@ -28,23 +34,23 @@ export default function EstimateReview({
   }
 
   return (
-    <div className="mt-2 space-y-2 rounded border bg-yellow-50 p-3">
-      <b>Cost estimate</b>
-      <ul>
+    <div className="mt-3 space-y-3 rounded-lg bg-amber-50 p-4 ring-1 ring-inset ring-amber-200">
+      <div className="text-sm font-semibold text-amber-900">Cost estimate</div>
+      <ul className="divide-y divide-amber-200 text-sm">
         {items.map((i) => (
-          <li key={i.id} className="flex justify-between">
-            <span>{i.description}</span>
-            <span>{money(i.amountCents)}</span>
+          <li key={i.id} className="flex justify-between gap-4 py-2">
+            <span className="whitespace-pre-wrap break-words">{i.description}</span>
+            <span className="shrink-0 font-medium">{money(i.amountCents)}</span>
           </li>
         ))}
       </ul>
-      <div className="flex justify-between border-t pt-1 font-semibold">
+      <div className="flex justify-between border-t border-amber-300 pt-2 text-base font-semibold">
         <span>Total</span>
         <span>{money(total)}</span>
       </div>
       <div className="flex gap-2">
-        <button className="rounded bg-black px-3 py-1 text-white" onClick={() => decide("APPROVE")}>Approve</button>
-        <button className="rounded border px-3 py-1" onClick={() => decide("REJECT")}>Reject</button>
+        <Button disabled={busy} onClick={() => decide("APPROVE")}>Approve estimate</Button>
+        <Button variant="danger" disabled={busy} onClick={() => decide("REJECT")}>Reject</Button>
       </div>
     </div>
   );

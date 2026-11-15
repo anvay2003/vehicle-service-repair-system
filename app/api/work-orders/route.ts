@@ -18,8 +18,9 @@ export async function GET() {
     where,
     include: {
       serviceRequest: { include: { vehicle: true } },
-      technician: { select: { id: true, name: true } },
+      technician: { select: { id: true, name: true, avatarUrl: true } },
       estimate: { include: { items: true } },
+      review: true,
     },
     orderBy: { updatedAt: "desc" },
   });
