@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
+import { DIAGNOSES, buildDiagnosis } from "@/lib/issues";
 import { Button, Field, field } from "./ui";
 
 export default function EstimateForm({
@@ -13,7 +14,8 @@ export default function EstimateForm({
   initialDiagnosis: string;
   onDone: (msg: string) => void;
 }) {
-  const [diagnosis, setDiagnosis] = useState(initialDiagnosis);
+  const [findings, setFindings] = useState<string[]>([]);
+  const [notes, setNotes] = useState(initialDiagnosis);
   const [rows, setRows] = useState([{ description: "", amount: "" }]);
   const [busy, setBusy] = useState(false);
 
@@ -22,11 +24,20 @@ export default function EstimateForm({
     return s + (Number.isFinite(n) && n > 0 ? Math.round(n * 100) : 0);
   }, 0);
 
+  function toggle(f: string) {
+    setFindings((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
+  }
+
   function update(i: number, patch: Partial<{ description: string; amount: string }>) {
     setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
 
   async function submit() {
+    const diagnosis = buildDiagnosis(findings, notes);
+    if (!diagnosis) {
+      onDone("Select at least one finding or add notes");
+      return;
+    }
     const items = rows.map((r) => ({
       description: r.description.trim(),
       amountCents: Math.round(parseFloat(r.amount) * 100),
@@ -38,7 +49,7 @@ export default function EstimateForm({
     setBusy(true);
     const res = await api<{ error?: string }>(`/api/work-orders/${orderId}/estimate`, {
       method: "POST",
-      body: JSON.stringify({ ...(diagnosis.trim() ? { diagnosis: diagnosis.trim() } : {}), items }),
+      body: JSON.stringify({ diagnosis, items }),
     });
     setBusy(false);
     onDone(res.ok ? "Estimate sent to customer for approval" : res.data?.error ?? "Could not submit estimate");
@@ -46,8 +57,39 @@ export default function EstimateForm({
 
   return (
     <div className="mt-3 space-y-4 rounded-lg bg-slate-50 p-4 ring-1 ring-inset ring-slate-200">
-      <Field label="Diagnosis and repair notes">
-        <textarea className={field} rows={4} value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} />
+      <div className="space-y-2">
+        <span className="text-sm font-medium text-slate-700">Diagnosis: what did you find?</span>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DIAGNOSES.map((f) => {
+            const on = findings.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(f)}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${
+                  on
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-500"
+                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] ${
+                    on ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-400"
+                  }`}
+                >
+                  {on ? "✓" : ""}
+                </span>
+                {f}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <Field label="Additional diagnosis notes (optional if you selected findings)">
+        <textarea className={field} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
 
       <div className="space-y-3">
@@ -75,14 +117,7 @@ export default function EstimateForm({
               />
             </Field>
             <Field label="Amount ($)" className="sm:w-48">
-              <input
-                className={field}
-                type="number"
-                min="0"
-                step="0.01"
-                value={r.amount}
-                onChange={(e) => update(i, { amount: e.target.value })}
-              />
+              <input className={field} type="number" min="0" step="0.01" value={r.amount} onChange={(e) => update(i, { amount: e.target.value })} />
             </Field>
           </div>
         ))}

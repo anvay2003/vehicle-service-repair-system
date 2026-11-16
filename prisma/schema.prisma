@@ -44,6 +44,7 @@ model User {
   avatarUrl       String?
   reviewsWritten  Review[] @relation("CustomerReviews")
   reviewsReceived Review[] @relation("TechnicianReviews")
+  notifications   Notification[]
 }
 
 model Vehicle {
@@ -85,6 +86,7 @@ model WorkOrder {
   updatedAt        DateTime        @updatedAt
   estimate         Estimate?
   review           Review?
+  parts            WorkOrderPart[]
 }
 
 enum EstimateStatus {
@@ -122,4 +124,36 @@ model Review {
   rating       Int
   comment      String?
   createdAt    DateTime  @default(now())
+}
+
+model Part {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  sku            String          @unique
+  unitPriceCents Int
+  stock          Int
+  usages         WorkOrderPart[]
+}
+
+model WorkOrderPart {
+  id             String    @id @default(cuid())
+  workOrderId    String
+  workOrder      WorkOrder @relation(fields: [workOrderId], references: [id])
+  partId         String
+  part           Part      @relation(fields: [partId], references: [id])
+  quantity       Int
+  unitPriceCents Int
+  createdAt      DateTime  @default(now())
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  workOrderId String?
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, readAt])
 }

@@ -19,3 +19,26 @@ export function buildDescription(issues: string[], notes: string) {
   if (notes.trim()) parts.push(`Notes: ${notes.trim()}`);
   return parts.join(" ");
 }
+export const DIAGNOSES = [
+  "Brake pads worn / need replacement",
+  "Brake rotors warped or scored",
+  "Oil is dirty / due for change",
+  "Battery weak or failing",
+  "Alternator or charging system fault",
+  "Spark plugs or ignition coil faulty",
+  "Air filter clogged",
+  "Coolant leak / thermostat or radiator fault",
+  "Worn belt or hose",
+  "Tires worn or misaligned",
+  "Suspension components worn (struts, bushings)",
+  "A/C refrigerant low or compressor fault",
+  "Transmission fluid low or shifting fault",
+  "Sensor or electrical fault (codes read)",
+] as const;
+
+export function buildDiagnosis(findings: string[], notes: string) {
+  const parts: string[] = [];
+  if (findings.length) parts.push(`Findings: ${findings.join("; ")}.`);
+  if (notes.trim()) parts.push(`Notes: ${notes.trim()}`);
+  return parts.join(" ");
+}

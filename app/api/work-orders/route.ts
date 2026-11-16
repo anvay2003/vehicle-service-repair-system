@@ -21,6 +21,7 @@ export async function GET() {
       technician: { select: { id: true, name: true, avatarUrl: true } },
       estimate: { include: { items: true } },
       review: true,
+      parts: { include: { part: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
