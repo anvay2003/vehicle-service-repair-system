@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guard";
+import { notify } from "@/lib/notify";
+import { vehicleLabel } from "@/lib/format";
 
 const schema = z.object({ decision: z.enum(["APPROVE", "REJECT"]) });
 
@@ -21,7 +23,7 @@ export async function POST(
 
   const order = await prisma.workOrder.findUnique({
     where: { id },
-    include: { serviceRequest: true, estimate: true },
+    include: { serviceRequest: { include: { vehicle: true } }, estimate: true },
   });
   if (!order || order.serviceRequest.customerId !== session.user.id) {
     return NextResponse.json({ error: "Work order not found" }, { status: 404 });
@@ -34,16 +36,32 @@ export async function POST(
     return NextResponse.json({ error: "No estimate awaiting approval" }, { status: 409 });
   }
 
+  const estimateId = order.estimate.id;
+  const technicianId = order.technicianId;
+  const car = vehicleLabel(order.serviceRequest.vehicle);
+  const who = session.user.name ?? "The customer";
+
   const updated = await prisma.$transaction(async (tx) => {
     await tx.estimate.update({
-      where: { id: order.estimate!.id },
+      where: { id: estimateId },
       data: { status: approve ? "APPROVED" : "REJECTED", decidedAt: new Date() },
     });
-    return tx.workOrder.update({
+    const wo = await tx.workOrder.update({
       where: { id },
       data: { status: approve ? "APPROVED" : "REJECTED" },
       include: { estimate: { include: { items: true } } },
     });
+    if (technicianId) {
+      await notify(
+        tx,
+        technicianId,
+        approve
+          ? `${who} approved the estimate for the ${car}. You can start the repair.`
+          : `${who} rejected the estimate for the ${car}. The work order is closed.`,
+        id
+      );
+    }
+    return wo;
   });
   return NextResponse.json(updated);
 }

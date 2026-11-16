@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guard";
+import { notify } from "@/lib/notify";
+import { vehicleLabel } from "@/lib/format";
 
 const schema = z.object({
   diagnosis: z.string().min(1).optional(),
@@ -29,7 +31,10 @@ export async function POST(
   }
   const { diagnosis, items } = parsed.data;
 
-  const order = await prisma.workOrder.findUnique({ where: { id } });
+  const order = await prisma.workOrder.findUnique({
+    where: { id },
+    include: { serviceRequest: { include: { vehicle: true } } },
+  });
   if (!order || order.technicianId !== session.user.id) {
     return NextResponse.json({ error: "Work order not found" }, { status: 404 });
   }
@@ -43,13 +48,21 @@ export async function POST(
     return NextResponse.json({ error: "Diagnosis required" }, { status: 400 });
   }
 
+  const car = vehicleLabel(order.serviceRequest.vehicle);
   const updated = await prisma.$transaction(async (tx) => {
     await tx.estimate.create({ data: { workOrderId: id, items: { create: items } } });
-    return tx.workOrder.update({
+    const wo = await tx.workOrder.update({
       where: { id },
       data: { status: "AWAITING_APPROVAL", ...(diagnosis ? { diagnosis } : {}) },
       include: { estimate: { include: { items: true } } },
     });
+    await notify(
+      tx,
+      order.serviceRequest.customerId,
+      `The estimate for your ${car} is ready. Please review it and approve or reject.`,
+      id
+    );
+    return wo;
   });
   return NextResponse.json(updated, { status: 201 });
 }

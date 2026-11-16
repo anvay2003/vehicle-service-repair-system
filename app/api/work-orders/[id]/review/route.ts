@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/guard";
+import { notify } from "@/lib/notify";
 
 const schema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -39,14 +40,20 @@ export async function POST(
     return NextResponse.json({ error: "You have already reviewed this repair" }, { status: 409 });
   }
 
-  const review = await prisma.review.create({
-    data: {
-      workOrderId: id,
-      customerId: session.user.id,
-      technicianId: order.technicianId,
-      rating,
-      comment: comment || null,
-    },
+  const technicianId = order.technicianId;
+  const who = session.user.name ?? "A customer";
+  const review = await prisma.$transaction(async (tx) => {
+    const created = await tx.review.create({
+      data: {
+        workOrderId: id,
+        customerId: session.user.id,
+        technicianId,
+        rating,
+        comment: comment || null,
+      },
+    });
+    await notify(tx, technicianId, `New ${rating}-star review from ${who}.`, id);
+    return created;
   });
   return NextResponse.json(review, { status: 201 });
 }
