@@ -3,3 +3,5 @@ export const money = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 export const vehicleLabel = (v: { year: number; make: string; model: string }) =>
   `${v.year} ${v.make} ${v.model}`;
+
+export const invoiceNumber = (n: number) => `INV-${String(n).padStart(4, "0")}`;

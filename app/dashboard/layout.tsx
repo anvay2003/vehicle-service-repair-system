@@ -20,6 +20,7 @@ const STAFF_LINKS = [
   OVERVIEW,
   { href: "/dashboard/queue", label: "Check-in queue" },
   { href: "/dashboard/orders", label: "Work orders" },
+  { href: "/dashboard/invoices", label: "Invoices" },
   NOTES,
 ];
 const NAV: Record<Role, { href: string; label: string }[]> = {
@@ -28,6 +29,7 @@ const NAV: Record<Role, { href: string; label: string }[]> = {
     { href: "/dashboard/repairs", label: "Repairs" },
     { href: "/dashboard/vehicles", label: "Vehicles" },
     { href: "/dashboard/request", label: "Request service" },
+    { href: "/dashboard/history", label: "History" },
     NOTES,
   ],
   STAFF: STAFF_LINKS,

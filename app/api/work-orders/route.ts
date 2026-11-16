@@ -22,6 +22,7 @@ export async function GET() {
       estimate: { include: { items: true } },
       review: true,
       parts: { include: { part: true } },
+      invoice: { include: { items: true } },
     },
     orderBy: { updatedAt: "desc" },
   });

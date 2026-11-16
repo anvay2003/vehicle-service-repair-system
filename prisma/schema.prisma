@@ -87,6 +87,7 @@ model WorkOrder {
   estimate         Estimate?
   review           Review?
   parts            WorkOrderPart[]
+  invoice          Invoice?
 }
 
 enum EstimateStatus {
@@ -156,4 +157,29 @@ model Notification {
   createdAt   DateTime  @default(now())
 
   @@index([userId, readAt])
+}
+
+enum InvoiceItemKind {
+  ESTIMATE
+  PART
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  number      Int           @unique @default(autoincrement())
+  workOrderId String        @unique
+  workOrder   WorkOrder     @relation(fields: [workOrderId], references: [id])
+  totalCents  Int
+  createdAt   DateTime      @default(now())
+  items       InvoiceItem[]
+}
+
+model InvoiceItem {
+  id             String          @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  kind           InvoiceItemKind
+  description    String
+  quantity       Int
+  unitPriceCents Int
 }
