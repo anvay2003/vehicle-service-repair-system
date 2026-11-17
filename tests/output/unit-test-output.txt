@@ -1,0 +1,31 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.1.0 [39m[90m/Users/anvay/Documents/vehicle_system_management[39m
+
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mallows CHECKED_IN -> DIAGNOSIS[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mallows APPROVED -> IN_REPAIR[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mallows IN_REPAIR -> COMPLETED[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mdoes not allow DIAGNOSIS -> AWAITING_APPROVAL (only the estimate endpoint may do that)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mdoes not allow AWAITING_APPROVAL -> COMPLETED (customer decision required)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mdoes not allow the technician to approve or reject[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mdoes not allow skipping steps[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/workflow.test.ts[2m > [22mcanTechTransition (technician work-order state machine)[2m > [22mdoes not allow moves out of closed states[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22missue and diagnosis option lists[2m > [22moffers at least 8 customer issues plus Other[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22missue and diagnosis option lists[2m > [22mhas no duplicate options[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDescription[2m > [22mjoins issues and notes[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDescription[2m > [22momits empty notes[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDescription[2m > [22msupports notes only[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDescription[2m > [22mreturns an empty string when nothing is provided[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDescription[2m > [22mtrims notes[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDiagnosis[2m > [22mjoins findings and notes[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDiagnosis[2m > [22momits empty notes[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/issues.test.ts[2m > [22mbuildDiagnosis[2m > [22mreturns an empty string when nothing is provided[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/format.test.ts[2m > [22mformat helpers[2m > [22mpretty replaces underscores[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/format.test.ts[2m > [22mformat helpers[2m > [22mmoney formats integer cents as US dollars[32m 31[2mms[22m[39m
+ [32m✓[39m tests/unit/format.test.ts[2m > [22mformat helpers[2m > [22mvehicleLabel joins year, make and model[32m 0[2mms[22m[39m
+ [32m✓[39m tests/unit/format.test.ts[2m > [22mformat helpers[2m > [22minvoiceNumber zero-pads to four digits[32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m3 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+[2m   Start at [22m 18:52:24
+[2m   Duration [22m 322ms[2m (transform 57%, tests 21%, import 15%, worker 7%)[22m
+
