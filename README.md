@@ -1,176 +1,164 @@
-# vehicle-service-repair-system
 # VSRMS: Vehicle Service & Repair Management System
 
-Web application for an independent auto repair shop. A customer registers a vehicle and requests service, staff check the vehicle in and assign a technician, and the technician records a diagnosis and advances the repair status. The customer sees progress on their dashboard.
-
-Course project for CSE 5324-001 Agile Object-Oriented Software Engineering (UT Arlington, Fall 2026).
+Team project for CSE 5324-001 Agile Object-Oriented Software Engineering, UT Arlington, Fall 2026.
 Team: Anvay Sharma, Dev Thakkar, Kenil Patel.
 
-## Current status
+VSRMS tracks a vehicle repair from the customer's request to the invoice. Customers request service, staff check in vehicles and assign technicians, technicians diagnose and repair, and customers approve estimates, rate the technician and view their history.
 
-This is a partial system built for Submission 2 (Project Progress Report).
+**Not deployed (per instructor guidance). It runs locally with the steps below.**
 
-| Area | Status |
+- Repository: https://github.com/anvay2003/vehicle-service-repair-system
+- Project board: https://github.com/users/anvay2003/projects/1
+
+## Features by role
+
+| Role | What they can do |
 |---|---|
-| US-01 Register vehicle | Done |
-| US-02 Submit service request | Done |
-| US-03 Check in vehicle / create work order | Done |
-| US-04 Assign technician | Done |
-| US-05 Diagnosis and status tracking | Done up to `AWAITING_APPROVAL` |
-| US-06 Estimate approval/rejection | Not started |
-| US-07 Parts, US-08 Invoice, US-09 History, US-10 Notifications | Not started |
-
-Known gaps:
-- There is no registration page. Customer accounts can only be created through `POST /api/auth/register`.
-- The customer approve/reject step is not built, so work orders cannot move past `AWAITING_APPROVAL` in the UI.
-- There are no automated tests. Testing so far was manual (see the progress report, Section 9).
-- The application is not deployed. It runs locally.
+| Customer | Register, add vehicles, request service by ticking common issues, track repair progress, approve or reject the estimate, rate the technician, view service history and invoices, see notifications |
+| Service staff / Admin | Check in requests, assign or reassign a technician (picture, name, rating), generate invoices, see notifications. Admin uses the staff screens; there is no admin-specific workflow |
+| Technician | Start diagnosis, tick findings, send an itemized estimate, start the repair, record parts used (stock decreases), mark the repair completed, see own ratings and notifications |
 
 ## Tech stack
 
-- Next.js 16 (App Router, Turbopack), React, TypeScript, Tailwind CSS
-- Next.js API route handlers
-- PostgreSQL (hosted on Railway) with Prisma 6
-- NextAuth v4 (credentials provider, JWT sessions), bcryptjs, zod
+Next.js 16.4.2 (App Router, Turbopack), React, TypeScript, Tailwind CSS 4, Next.js route handlers, PostgreSQL, Prisma 6.19.3 (pinned, see Troubleshooting), NextAuth v4 (credentials + JWT), bcryptjs, zod, Vitest 5.1.0.
 
-Prisma is pinned to version 6. A Prisma 8 release candidate broke the CLI, so do not upgrade it.
+## Prerequisites
 
-## Getting started
+- Node.js 26.0.0 and npm
+- Git
+- A PostgreSQL database and its connection URL. Only a Railway-hosted database was tested. Use Railway's **public** URL when running locally (the `.internal` URL works only inside Railway).
 
-### Prerequisites
-- Node.js (current LTS) and npm
-- A PostgreSQL database. This project used a Railway database.
-
-### 1. Clone and install
+## Setup
 
 ```bash
 git clone https://github.com/anvay2003/vehicle-service-repair-system.git
 cd vehicle-service-repair-system
 npm install --legacy-peer-deps
-```
-
-`--legacy-peer-deps` is needed because of NextAuth's peer dependency range. During install you may see a Prisma message about an unknown `skills` command and a deprecation warning for `package.json#prisma`. Both are harmless.
-
-### 2. Configure environment variables
-
-Copy the example file and fill in your own values:
-
-```bash
 cp .env.example .env
 ```
 
-- `DATABASE_URL`: your PostgreSQL connection string. If you use Railway, use the **public** database URL when running locally. The `.internal` URL only works inside Railway.
-- `NEXTAUTH_SECRET`: a generated secret. Create one with:
-  ```bash
-  openssl rand -base64 32
-  ```
-  Without it, login fails with a JWT decryption error.
+Edit `.env`:
 
-`.env` is git-ignored. Never commit real credentials. `.env.example` contains placeholder values only.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | your PostgreSQL connection URL |
+| `NEXTAUTH_SECRET` | output of `openssl rand -base64 32` (required; login fails without it) |
+| `NEXTAUTH_URL` | `http://localhost:3000` |
 
-### 3. Set up the database
-
-For a new, empty database:
+Create the schema and seed data, in this order:
 
 ```bash
 npx prisma migrate deploy
-npx prisma db seed
+npx prisma generate
+npx prisma db seed                       # base users: customer, staff, technician, admin
+npx tsx prisma/seed-technicians.ts       # four more technicians with pictures
+npx tsx prisma/seed-parts.ts             # parts catalog with stock
+npx tsx prisma/seed-demo.ts              # optional: demo customers, cars and reviews
 ```
 
-If you are connecting to a database that has already been migrated and seeded, skip this step.
+If a seed script says `DATABASE_URL` is not found, run it as `npx tsx --env-file=.env prisma/seed-technicians.ts`.
+`npx tsx prisma/seed-demo.ts --clean` removes the demo data.
 
-### 4. Run the app
+Start the app and keep that terminal open:
 
 ```bash
 npm run dev
 ```
 
-Open the URL printed in the terminal (normally http://localhost:3000). Keep that terminal open while you use the app. Run other commands in a second terminal.
+Open http://localhost:3000. Run only one dev server at a time.
 
-Other commands:
-
-```bash
-npm run build        # production build (also runs the TypeScript check)
-npx tsc --noEmit     # type check only
-```
-
-## Test accounts
-
-The seed script creates one account per role. These are development accounts for a test database only.
+## Test accounts (development data only, not real credentials)
 
 | Role | Email | Password |
 |---|---|---|
 | Customer | customer@vsrms.test | password123 |
-| Staff | staff@vsrms.test | password123 |
+| Service staff | staff@vsrms.test | password123 |
 | Technician | tech@vsrms.test | password123 |
 | Admin | admin@vsrms.test | password123 |
+| Technician (Marcus Reyes) | marcus@vsrms.test | Marcus-Torque-26 |
+| Technician (Priya Nair) | priya@vsrms.test | Priya-Gearbox-26 |
+| Technician (Daniel Okafor) | daniel@vsrms.test | Daniel-Piston-26 |
+| Technician (Sofia Lindqvist) | sofia@vsrms.test | Sofia-Camshaft-26 |
 
-Suggested walkthrough:
-1. Log in as the customer, register a vehicle, and submit a service request.
-2. Log in as staff, check in the request, and assign the technician.
-3. Log in as the technician, move the work order to Diagnosis, then enter a diagnosis and move it to Awaiting Approval.
-4. Log in as the customer and see the updated status and diagnosis.
+New customers can register at `/register`.
 
-## Roles
+**Demo data.** `seed-demo.ts` creates six fictional customers (`@demo.vsrms.test`, they cannot log in), ten completed repairs and ten reviews, plus two extra cars for `customer@vsrms.test`. These reviews are **seeded demo data, not real feedback**. Technician pictures are generated cartoon avatars loaded from DiceBear; initials are shown if the service is unreachable.
 
-`CUSTOMER`, `STAFF`, `TECHNICIAN`, `ADMIN`. Each protected API route checks the caller's role with `requireRole` in `lib/guard.ts`. A request with no session gets `401`; a signed-in user with the wrong role gets `403`. Admin currently shares the staff functions and has no dedicated workflow yet.
+## Pages
 
-## API endpoints
+- `/login`: sign in; shows technician ratings and customer reviews
+- `/register`: customer registration
+- `/dashboard`: overview for the signed-in role, with a notification bell and a tab bar
+  - Customer: Overview, Repairs, History, Vehicles, Request service, Notifications
+  - Staff/Admin: Overview, Check-in queue, Work orders, Invoices, Notifications
+  - Technician: Overview, My work orders, Notifications
 
-| Method | Path | Who | Purpose |
-|---|---|---|---|
-| POST | `/api/auth/register` | Public | Create a customer account |
-| GET/POST | `/api/auth/[...nextauth]` | Public | NextAuth sign-in and session |
-| GET, POST | `/api/vehicles` | Customer | List own vehicles; register a vehicle |
-| GET | `/api/service-requests` | Customer, Staff, Admin | List requests (customers see only their own). Optional `?status=REQUESTED`, `CHECKED_IN` or `CANCELLED` |
-| POST | `/api/service-requests` | Customer | Submit a request for an owned vehicle (404 if the vehicle is not theirs) |
-| POST | `/api/service-requests/[id]/check-in` | Staff, Admin | Check in a request and create its work order in one transaction (404 not found, 409 if not `REQUESTED`) |
-| GET | `/api/technicians` | Staff, Admin | List technicians |
-| GET | `/api/work-orders` | Signed-in roles | List work orders, scoped by role |
-| POST | `/api/work-orders/[id]/assign` | Staff, Admin | Assign a technician |
-| PATCH | `/api/work-orders/[id]/status` | Technician | Advance the status of an own work order; body `{ "status": "..." }` |
+Opening a page for another role redirects to `/dashboard`; signed-out visitors go to `/login`.
 
-### Work-order status rules
+## API
 
-Technicians may make these transitions only (`lib/workflow.ts`):
+All routes return JSON. The role guard runs first: `401` without a session and `403` for the wrong role, before any `404` or `409` check.
 
-- `CHECKED_IN` to `DIAGNOSIS`
-- `DIAGNOSIS` to `AWAITING_APPROVAL` (requires diagnosis text)
-- `APPROVED` to `IN_REPAIR`
-- `IN_REPAIR` to `COMPLETED`
+| Method and path | Roles |
+|---|---|
+| `POST /api/auth/register` | public (creates a customer) |
+| `GET/POST /api/vehicles` |
+| `GET/POST /api/service-requests` (`?status=`) | (customers see only their own) |
+| `POST /api/service-requests/[id]/check-in` | staff, admin |
+| `GET /api/technicians` | 
+| `GET /api/work-orders` | all signed-in roles (scoped by role) |
+| `POST /api/work-orders/[id]/assign` | staff, admin |
+| `PATCH /api/work-orders/[id]/status` | technician (own orders) |
+| `POST /api/work-orders/[id]/estimate` | technician (own orders) |
+| `POST /api/work-orders/[id]/estimate/decision` | customer (own orders) |
+| `GET /api/parts` | technician, staff, admin |
+| `POST /api/work-orders/[id]/parts` | technician (own orders, In Repair only) |
+| `POST /api/work-orders/[id]/invoice` | staff, admin |
+| `POST /api/work-orders/[id]/review` | customer (own, completed orders, once) |
+| `GET /api/reviews` | public (first name + last initial, rating, comment) |
+| `GET /api/notifications`, `POST /api/notifications/read` | all signed-in roles |
 
-Any other jump returns `409`. The customer's approve/reject step (`AWAITING_APPROVAL` to `APPROVED` or `REJECTED`) is not built yet.
+## Work order status rules
 
-## Data model
+`CHECKED_IN` → `DIAGNOSIS` → (technician sends an estimate) `AWAITING_APPROVAL` → (customer decides) `APPROVED` or `REJECTED` → `IN_REPAIR` → `COMPLETED`.
 
-Prisma models (see `prisma/schema.prisma`):
+- `DIAGNOSIS` → `AWAITING_APPROVAL` happens only by submitting an estimate.
+- Approve and reject belong to the customer. `REJECTED` closes the work order.
+- Parts can be recorded only while the order is `IN_REPAIR`. Stock is decremented atomically; `409` if there is not enough.
+- An invoice can be generated once per order, after `COMPLETED`, from the approved estimate plus the parts used. No tax is applied.
+- Money is stored as integer cents.
 
-- **User**: name, unique email, password hash, role
-- **Vehicle**: make, model, year, unique VIN, mileage, owner
-- **ServiceRequest**: description, status (`REQUESTED`, `CHECKED_IN`, `CANCELLED`), vehicle, customer; has zero or one WorkOrder
-- **WorkOrder**: status, optional technician, optional diagnosis; linked to exactly one ServiceRequest
+## Tests
 
-Estimate, Part, Invoice and Notification models are planned and not created yet.
+```bash
+npm test          # 22 unit tests (Vitest): state transitions, issue/diagnosis builders, formatters
+npm run build     # compiles and type-checks; use this as the gate before every push
+```
+
+Saved output: `tests/output/unit-test-output.txt`. The full manual test set (T-01 to T-63) is in `tests/manual-test-cases.md`. There are no automated API or UI tests and no coverage metric.
 
 ## Project structure
 
 ```
-app/            pages and API routes (app/api/...), login and dashboard
-components/     CustomerView, StaffView, TechView, SignOutButton
-lib/            prisma client, auth, guard (requireRole), workflow rules, helpers
-prisma/         schema, migrations, seed
+app/            pages and API route handlers (app/api/**/route.ts)
+components/     views and panels (CustomerView, StaffView, TechView, EstimateForm, ...)
+lib/            prisma, auth, guard (API roles), page-auth, workflow, notify, issues, format, api
+prisma/         schema.prisma, migrations/, seed scripts
+tests/          unit tests and saved output
 types/          NextAuth type extensions
 ```
 
 ## Troubleshooting
 
-- **Login fails with a JWT decryption error:** `NEXTAUTH_SECRET` is missing or changed. Set it in `.env`, restart, and clear the site's cookies for localhost.
-- **Cannot reach the database:** use the public database URL, not the `.internal` one, and check that the Railway service is running.
-- **Page shows a build or CSS error after switching between `build` and `dev`:** stop the server, run `rm -rf .next`, and start `npm run dev` again.
-- **Port 3000 already in use:** stop the other process (`lsof -i :3000`, then `kill <PID>`) or use the port the terminal reports.
-- **`npm install` complains about peer dependencies:** use `--legacy-peer-deps`.
+- **JWT decryption error or login fails:** `NEXTAUTH_SECRET` is missing or empty in `.env`. Generate it with `openssl rand -base64 32`.
+- **Cannot reach the database:** use Railway's public URL, not the `.internal` one.
+- **Styling is missing or a CSS/module error appears after switching between `npm run build` and `npm run dev`:** run `rm -rf .next` and restart `npm run dev`. If the package is genuinely missing, run `npm install --legacy-peer-deps`.
+- **Odd errors or the app is on port 3001:** another dev server is still running. Stop it (`kill <pid>`) and start one only.
+- **`Cannot find name 'LayoutProps'` after `rm -rf .next`:** run `npx next typegen`, then `npx tsc --noEmit`.
+- **Prisma CLI errors:** Prisma is pinned to 6.x. The Prisma 8 release candidate broke the CLI. Do not upgrade, and do not run `npm audit fix --force`.
+- **`prisma skills sync` message during install:** harmless.
+- **`Unique constraint` or missing-technician errors in a seed script:** run the seeds in the order above.
 
-## Project links
+## Known limitations
 
-- Repository: https://github.com/anvay2003/vehicle-service-repair-system
-- Project board: https://github.com/users/anvay2003/projects/1
+No email or SMS notifications (in-app only, refreshed every 30 seconds); requests cannot be cancelled or edited; no password reset; no inventory restock screen; invoices have no tax or payment; the "Other needs details" rule is checked in the browser only; one review per repair; no automated API or UI tests; not deployed; development passwords are listed in this README.
